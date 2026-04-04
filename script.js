@@ -62,15 +62,24 @@
   const video = document.querySelector('.hero-video');
   if (!video) return;
 
-  // Reduce motion preference
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Disable video for users who prefer less motion
   if (prefersReducedMotion) {
     video.pause();
     video.style.display = 'none';
     return;
   }
 
-  // Pause when tab hidden (save CPU/battery)
+  // Ensure video is muted (required for autoplay)
+  video.muted = true;
+
+  // Play when video is ready (prevents laggy start)
+  video.addEventListener('canplay', () => {
+    video.play().catch(() => {});
+  });
+
+  // Pause when tab is hidden
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       video.pause();
@@ -79,8 +88,9 @@
     }
   });
 
-  // Pause when hero not visible (intersection)
+  // Play only when hero is visible
   const heroSection = document.getElementById('hero');
+
   if (heroSection && 'IntersectionObserver' in window) {
     const obs = new IntersectionObserver(
       ([entry]) => {
@@ -90,10 +100,17 @@
           video.pause();
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.25 } // slightly higher for stability
     );
+
     obs.observe(heroSection);
   }
+
+  // Extra: force load only after page is ready
+  window.addEventListener('load', () => {
+    video.load();
+  });
+
 })();
 
 
